@@ -1,17 +1,18 @@
 import peewee
 
-database = peewee.SqliteDatabase("wee.db")
-
+database = peewee.SqliteDatabase("event_log.db")
 
 class ActionHistory(peewee.Model):
-    create = peewee.DateTimeField()
+    # date time format will be cause problem when conver to json
+    # created = peewee.DateTimeField()
+    created = peewee.CharField()
     board_num = peewee.IntegerField()
+    mark = peewee.BooleanField(default=False)
 
     # Need Analog Input record ?
 
     class Meta:
         database = database
-
 
 if __name__ == "__main__":
     try:

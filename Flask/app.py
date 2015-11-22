@@ -1,20 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-'''
 
-'''
-
-from datetime import datetime
+import json
 import time
+from datetime import datetime
 from queue import Queue
 from threading import Thread
 
-from flask.ext.restful import Api, Resource, reqparse, abort
-
 import RPi.GPIO as GPIO
 from flask import Flask
+from flask.ext.restful import Api, Resource, reqparse
 from model import ActionHistory
-
+from playhouse.shortcuts import *
 
 app = Flask(__name__)
 api = Api(app)
@@ -22,44 +19,26 @@ api = Api(app)
 # queue for save new event
 q = Queue()
 
-ACTIONS = [
-    {
-        'datetime': 20151121060606,
-        'event': 10
-    },
-    {
-        'datetime': 20151121070606,
-        'event': 22
-    },
-    {
-        'datetime': 20151121070609,
-        'event': 16
-    }
-]
-
-
 def my_callback18(channel):
     global q
-    data = [str(datetime.now()), (18, channel)]
+    data = [str(datetime.now()), 18]
     q.put(data)
-    # print('Falling edge detected on 18')
 
 
 def my_callback22(channel):
     global q
-    data = [str(datetime.now()), (22, channel)]
+    data = [str(datetime.now()), 22]
     q.put(data)
-    # print('Falling edge detected on 18')
 
 
 class SaveToDatabase(Thread):
     def run(self):
         global q
         while True:
-            src_data = q.get()
-            new_data = ActionHistory(create=src_data[0],
-                                     board_num=src_data[1])
-            new_data.save()
+            src = q.get()
+            obj = ActionHistory(created=src[0], board_num=src[1], mark=False)
+            obj.save()
+            del obj
             q.task_done()
 
 
@@ -86,29 +65,25 @@ def init_gpio():
         callback=my_callback22,
         bouncetime=300)
 
-
-def abort_if_todo_doesnt_exist(get_counts):
-    # if get_counts not in ACTIONS:
-    if len(ACTIONS) < 1:
-        abort(404, message="Action {} doesn't exist".format(get_counts))
-
-
 parser = reqparse.RequestParser()
 parser.add_argument('target')
 
-
 class Action(Resource):
     def get(self, get_counts):
-        abort_if_todo_doesnt_exist(get_counts)
-        items = []
-        for i in range(get_counts):
-            items.append(ACTIONS[i])
-        return items
+        items = ActionHistory().select().where(ActionHistory.mark == False).limit(get_counts)
+
+        # conver to json
+        alldata = []
+        for item in items:
+            json_data = json.dumps(model_to_dict(item))
+            alldata.append(json_data)
+        return alldata
 
 
 class ActionList(Resource):
     def get(self):
-        return len(ACTIONS)
+        num = ActionHistory().select().where(ActionHistory.mark == False).count()
+        return num  # len(ACTIONS)
 
 
 def sendcmd(id):
@@ -147,8 +122,12 @@ if __name__ == '__main__':
 '''
 # test action
 import requests
-r = requests.get('http://localhost:5000/action/x')
+r = requests.get('http://localhost:5000/actions/x')
 r.json()
+
+# get how much record are there
+r = requests.get('http://localhost:5000/actions')
+r.text
 
 #test out
 r = requests.put('http://localhost:5000/out/x')
