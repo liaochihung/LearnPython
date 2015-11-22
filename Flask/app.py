@@ -4,16 +4,23 @@
 
 '''
 
-import time
 from datetime import datetime
+import time
+from queue import Queue
+from threading import Thread
+
+from flask.ext.restful import Api, Resource, reqparse, abort
 
 import RPi.GPIO as GPIO
 from flask import Flask
-from flask.ext.restful import Api, Resource, reqparse, abort
 from model import ActionHistory
+
 
 app = Flask(__name__)
 api = Api(app)
+
+# queue for save new event
+q = Queue()
 
 ACTIONS = [
     {
@@ -32,17 +39,28 @@ ACTIONS = [
 
 
 def my_callback18(channel):
-    new_data = ActionHistory(create=datetime.now(),
-                             board_num=18)
-    new_data.save()
+    global q
+    data = [str(datetime.now()), (18, channel)]
+    q.put(data)
     # print('Falling edge detected on 18')
 
 
 def my_callback22(channel):
-    new_data = ActionHistory(create=datetime.now(),
-                             board_num=22)
-    new_data.save()
+    global q
+    data = [str(datetime.now()), (22, channel)]
+    q.put(data)
     # print('Falling edge detected on 18')
+
+
+class SaveToDatabase(Thread):
+    def run(self):
+        global q
+        while True:
+            src_data = q.get()
+            new_data = ActionHistory(create=src_data[0],
+                                     board_num=src_data[1])
+            new_data.save()
+            q.task_done()
 
 
 def init_gpio():
@@ -117,6 +135,9 @@ api.add_resource(Output, '/out/<int:target_id>')
 if __name__ == '__main__':
     try:
         init_gpio()
+        threadSaveDB = SaveToDatabase()
+        threadSaveDB.start()
+
         # host use 0.0.0.0 for externally visible
         app.run(debug=True, host='0.0.0.0', port=5000)
         # app.run(port=5000, debug=True, host='0.0.0.0')
