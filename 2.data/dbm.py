@@ -10,7 +10,8 @@ db['www.cnn.com'] = 'Cable News Network'
 # Loop through contents. Other dictionary methods
 # such as .keys(), .values() also work.
 for k, v in db.iteritems():
-    print k, '\t', v
+    print
+    k, '\t', v
 
 # Storing a non-string key or value will raise an exception (most
 # likely a TypeError).

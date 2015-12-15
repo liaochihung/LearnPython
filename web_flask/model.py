@@ -2,6 +2,7 @@ import peewee
 
 database = peewee.SqliteDatabase("event_log.db")
 
+
 class ActionHistory(peewee.Model):
     # date time format will be cause problem when conver to json
     # created = peewee.DateTimeField()
@@ -13,6 +14,7 @@ class ActionHistory(peewee.Model):
 
     class Meta:
         database = database
+
 
 if __name__ == "__main__":
     try:

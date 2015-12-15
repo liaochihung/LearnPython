@@ -7,17 +7,20 @@ from datetime import datetime
 from queue import Queue
 from threading import Thread
 
-import RPi.GPIO as GPIO
 from flask import Flask
+from playhouse.shortcuts import *
+
+import RPi.GPIO as GPIO
 from flask.ext.restful import Api, Resource, reqparse
 from model import ActionHistory
-from playhouse.shortcuts import *
+
 
 app = Flask(__name__)
 api = Api(app)
 
 # queue for save new event
 q = Queue()
+
 
 def my_callback18(channel):
     global q
@@ -65,8 +68,10 @@ def init_gpio():
         callback=my_callback22,
         bouncetime=300)
 
+
 parser = reqparse.RequestParser()
 parser.add_argument('target')
+
 
 class Action(Resource):
     def get(self, get_counts):

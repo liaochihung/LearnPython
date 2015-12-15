@@ -18,6 +18,7 @@ class DVD:
     def save(self, filename=None):
 
         self.check_filename(filename)
+
     fh = None
     try:
         data = (self.title, self.year,

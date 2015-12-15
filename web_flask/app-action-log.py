@@ -4,9 +4,9 @@
 使用 Flask-RESTful 设计 RESTful API
 '''
 
-from flask.ext.restful import Api, Resource, reqparse, abort
-
 from flask import Flask
+
+from flask.ext.restful import Api, Resource, reqparse, abort
 
 
 app = Flask(__name__)
